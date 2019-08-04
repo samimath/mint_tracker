@@ -1,8 +1,10 @@
+## Simple R Shiny App to provide more customized visualization for Mint data
+## Author : Sami Cheong
 library(dplyr)
 library(ggplot2)
 
 ui <- pageWithSidebar(
-  headerPanel("CSV Data explorer"),
+  headerPanel("Mint Data explorer"),
   sidebarPanel(
     
     fileInput('datafile', 'Choose CSV file',
