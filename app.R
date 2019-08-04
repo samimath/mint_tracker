@@ -1,10 +1,9 @@
-## Simple R Shiny App to provide more customized visualization for Mint data
-## Author : Sami Cheong
 library(dplyr)
 library(ggplot2)
+library(plotly)
 
 ui <- pageWithSidebar(
-  headerPanel("Mint Data explorer"),
+  headerPanel("CSV Data explorer"),
   sidebarPanel(
     
     fileInput('datafile', 'Choose CSV file',
@@ -22,9 +21,9 @@ ui <- pageWithSidebar(
   ),
   
   mainPanel(
-    plotOutput("viz"),
+    plotlyOutput("viz"),
     dataTableOutput("table")
-
+    
   )
 )
 
@@ -109,20 +108,21 @@ server <- function(session,input, output) {
       df[,'Year']<-strftime(df$Date, "%Y" )
       df[,'Month']<-strftime(df$Date, "%m" )
       df[,'Day']<-strftime(df$Date, "%d" )
+      df[,'Week']<-strftime(df$Date, "%V" )
       df[,'MonthDay']<-as.numeric(paste0(df[,'Month'],df[,'Day']))
       
       return(df)
     }
     
   }
-
+  
   output$table <- renderDataTable({
     if (is.null(input$vars) || length(input$vars)==0)
       return(NULL)
     
     df <- get_output_time()#test <-format(strptime(as.character(tran$Date),"%d/%m/%Y"),"%d/%m/%Y")
     
-    return(df%>%select(Date,Description,Category,Amount,`Account Name`)%>%filter(Date >= input$dateRange[1], Date <= input$dateRange[2]))
+    return(df%>%select(Date,Week,Description,Category,Amount,`Account Name`)%>%filter(Date >= input$dateRange[1], Date <= input$dateRange[2]))
     
   })
   
@@ -147,28 +147,37 @@ server <- function(session,input, output) {
       return(paste('Please upload transaction data'))
     
     
-      paste('Average spending on ', paste(input$vars,collapse = '+'),  ':', 
-            get_output_time()%>%summarise(Amount = median(Amount)))
-
-      
+    paste('Average spending on ', paste(input$vars,collapse = '+'),  ':', 
+          get_output_time()%>%summarise(Amount = median(Amount)))
+    
+    
     
   }
-    
-    
+  
+  
   )
   
   
   
-  output$viz <-renderPlot({
-
+  output$viz <-renderPlotly({
+    
     
     min_date <- as.numeric(strftime(input$dateRange[1],'%m%d'))
     max_date <- as.numeric(strftime(input$dateRange[2],'%m%d'))
     
-    df<-get_output_time()%>%filter(MonthDay >= min_date, MonthDay <= max_date)
+    df<-get_output_time()%>%filter(Date > input$dateRange[1], Date <= input$dateRange[2])
     
-    ggplot(df) + geom_bar(aes(x = Month, y = Amount,fill = Month),stat = 'identity') + facet_grid(.~Year)
-
+    #p<-ggplot(df) + geom_bar(aes(x = Month, y = Amount,fill = Month),stat = 'identity') + facet_grid(.~Year)
+    #ggplotly(p)
+    plot_ly(df) %>% 
+      add_trace(x = ~Week, y = ~Amount, 
+                type = 'bar', mode = 'lines', 
+                color = ~Week,hoverinfo = 'text', text = ~paste(Date,Amount))%>%
+      layout(yaxis = list(title = 'Total Spending'), barmode = 'stack')
+    
+    #add_bars(data = df, x = ~MonthDay, y = ~Amount, color = ~Year, colors = "Dark2",
+    #        yaxis = ~paste0("y", Amount),size = 2)%>%add_trace(y = ~Amount,data = df)
+    
   })
 }
 
