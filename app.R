@@ -3,7 +3,7 @@ library(ggplot2)
 library(plotly)
 
 ui <- pageWithSidebar(
-  headerPanel("CSV Data explorer"),
+  headerPanel("Mint Data Explorer"),
   sidebarPanel(
     
     fileInput('datafile', 'Choose CSV file',
